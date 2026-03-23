@@ -6,6 +6,9 @@
  * Sayfa başlığı $pageTitle değişkeniyle özelleştirilebilir.
  * ============================================================
  */
+// e() ve diğer yardımcı fonksiyonlar bu dosyada tanımlı
+require_once __DIR__ . '/functions.php';
+
 $pageTitle = $pageTitle ?? 'Görev Yönetim';
 ?>
 <!DOCTYPE html>

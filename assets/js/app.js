@@ -152,14 +152,14 @@ function renderSidebarCategories() {
     const li = document.createElement('li');
     li.className = 'sidebar__nav-item';
     li.innerHTML = `
-      <button class="sidebar__nav-link" data-cat-id="${cat.id}">
+      <div class="sidebar__nav-link" data-cat-id="${cat.id}" role="button" tabindex="0">
         <span class="sidebar__cat-dot" style="background:${escHtml(cat.color)}"></span>
         <span>${escHtml(cat.name)}</span>
         <span class="sidebar__cat-actions">
           <button class="btn btn--icon" style="font-size:.75rem" onclick="openEditCatModal(${cat.id})" title="Düzenle">✏️</button>
           <button class="btn btn--icon" style="font-size:.75rem" onclick="deleteCategory(${cat.id})" title="Sil">🗑️</button>
         </span>
-      </button>
+      </div>
     `;
     li.querySelector('[data-cat-id]').addEventListener('click', (e) => {
       if (e.target.closest('.sidebar__cat-actions')) return;

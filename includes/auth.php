@@ -30,7 +30,7 @@ if (session_status() === PHP_SESSION_NONE) {
 function requireLogin(): void
 {
     if (empty($_SESSION['user_id'])) {
-        header('Location: /login.php');
+        header('Location: ' . BASE_URL . '/login.php');
         exit;
     }
 }

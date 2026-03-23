@@ -15,6 +15,17 @@ define('DB_USER', 'root');       // Kendi kullanıcı adınla değiştir
 define('DB_PASS', '');           // Kendi şifrenle değiştir
 define('DB_CHARSET', 'utf8mb4');
 
+// ── BASE_URL: projenin alt klasör desteği ──────────────────
+// Örn: htdocs/task-manager/ → BASE_URL = '/task-manager'
+//       htdocs/              → BASE_URL = ''
+if (!defined('BASE_URL')) {
+    // Projenin kök dizinini DOCUMENT_ROOT'a göre hesapla
+    $docRoot  = rtrim(str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'] ?? '')), '/');
+    $projRoot = rtrim(str_replace('\\', '/', realpath(__DIR__ . '/..')), '/');
+    $base     = str_replace($docRoot, '', $projRoot);
+    define('BASE_URL', $base === $projRoot ? '' : rtrim($base, '/'));
+}
+
 /**
  * Veritabanı bağlantısını döndürür (Singleton PDO instance).
  *

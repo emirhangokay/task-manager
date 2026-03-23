@@ -25,7 +25,7 @@ function e(string $value): string
  * @param string $message
  * @return void
  */
-function jsonSuccess(mixed $data = null, string $message = 'İşlem başarılı.'): void
+function jsonSuccess($data = null, string $message = 'İşlem başarılı.'): void
 {
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['success' => true, 'message' => $message, 'data' => $data]);
@@ -184,12 +184,8 @@ function getTodayTasks(int $userId): array
  */
 function priorityLabel(string $priority): string
 {
-    return match($priority) {
-        'low'    => 'Düşük',
-        'medium' => 'Orta',
-        'high'   => 'Yüksek',
-        default  => $priority,
-    };
+    $labels = ['low' => 'Düşük', 'medium' => 'Orta', 'high' => 'Yüksek'];
+    return $labels[$priority] ?? $priority;
 }
 
 /**
@@ -200,10 +196,6 @@ function priorityLabel(string $priority): string
  */
 function statusLabel(string $status): string
 {
-    return match($status) {
-        'pending'     => 'Bekliyor',
-        'in_progress' => 'Devam Ediyor',
-        'completed'   => 'Tamamlandı',
-        default       => $status,
-    };
+    $labels = ['pending' => 'Bekliyor', 'in_progress' => 'Devam Ediyor', 'completed' => 'Tamamlandı'];
+    return $labels[$status] ?? $status;
 }

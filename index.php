@@ -319,8 +319,10 @@ require_once __DIR__ . '/includes/header.php';
 <!-- Toast container -->
 <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
+<!-- BASE_URL: JS tarafının API ve yönlendirme için kullandığı kök yol -->
+<script>const BASE_URL = '<?= BASE_URL ?>';</script>
 <!-- Ana JavaScript -->
-<script src="/assets/js/app.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/app.js"></script>
 
 </body>
 </html>

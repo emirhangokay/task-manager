@@ -12,7 +12,7 @@ require_once __DIR__ . '/includes/auth.php';
 
 // Zaten giriş yapmışsa ana sayfaya git
 if (currentUserId()) {
-    header('Location: /index.php');
+    header('Location: ' . BASE_URL . '/index.php');
     exit;
 }
 
@@ -72,13 +72,14 @@ require_once __DIR__ . '/includes/header.php';
 
     <div class="auth-card__footer">
       Hesabınız yok mu?
-      <a href="/register.php">Kayıt Olun</a>
+      <a href="<?= BASE_URL ?>/register.php">Kayıt Olun</a>
     </div>
 
   </div>
 </div>
 
 <script>
+const BASE_URL = '<?= BASE_URL ?>';
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 
@@ -108,7 +109,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   setLoading(true);
 
   try {
-    const res = await fetch('/api/auth.php', {
+    const res = await fetch(BASE_URL + '/api/auth.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'login', login: loginVal, password: passVal }),
@@ -116,7 +117,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     const data = await res.json();
 
     if (data.success) {
-      window.location.href = '/index.php';
+      window.location.href = BASE_URL + '/index.php';
     } else {
       showFieldError('generalError', data.message);
     }

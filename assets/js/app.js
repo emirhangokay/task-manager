@@ -10,8 +10,12 @@
 /* ============================================================
    GLOBAL STATE
    ============================================================ */
+// BASE_URL: index.php tarafından <script> ile inject edilir.
+// Alt klasör yoksa '' (boş string) olur, varsa '/task-manager' gibi bir değer alır.
+const _BASE = (typeof BASE_URL !== 'undefined') ? BASE_URL : '';
+
 const State = {
-  csrfToken:  document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+  csrfToken:  document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '',
   filters: {
     status:      '',
     category_id: '',
@@ -127,7 +131,7 @@ function showToast(message, type = 'success', duration = 3500) {
  * Kategorileri API'den çeker ve global State'e kaydeder.
  */
 async function loadCategories() {
-  const res = await apiFetch('/api/categories.php');
+  const res = await apiFetch(_BASE + '/api/categories.php');
   if (res.success) {
     State.categories = res.data ?? [];
     renderSidebarCategories();
@@ -302,7 +306,7 @@ async function loadTasks() {
   const params = new URLSearchParams();
   Object.entries(State.filters).forEach(([k, v]) => { if (v) params.append(k, v); });
 
-  const res = await apiFetch(`/api/tasks.php?${params}`);
+  const res = await apiFetch(_BASE + `/api/tasks.php?${params}`);
   if (res.success) {
     renderTasks(res.data ?? []);
   } else {
@@ -411,7 +415,7 @@ async function handleCheckboxChange(e) {
   const taskId = parseInt(chk.dataset.id);
   const newStatus = chk.checked ? 'completed' : 'pending';
 
-  const res = await apiFetch('/api/tasks.php', {
+  const res = await apiFetch(_BASE + '/api/tasks.php', {
     method: 'POST',
     body: JSON.stringify({ action: 'toggle_status', id: taskId, new_status: newStatus, csrf_token: State.csrfToken }),
   });
@@ -440,7 +444,7 @@ async function handleStatusSelectChange(e) {
   const taskId   = parseInt(sel.dataset.id);
   const newStatus = sel.value;
 
-  const res = await apiFetch('/api/tasks.php', {
+  const res = await apiFetch(_BASE + '/api/tasks.php', {
     method: 'POST',
     body: JSON.stringify({ action: 'toggle_status', id: taskId, new_status: newStatus, csrf_token: State.csrfToken }),
   });
@@ -466,7 +470,7 @@ async function handleStatusSelectChange(e) {
 async function deleteTask(id) {
   if (!confirm('Bu görevi silmek istediğinizden emin misiniz?')) return;
 
-  const res = await apiFetch('/api/tasks.php', {
+  const res = await apiFetch(_BASE + '/api/tasks.php', {
     method: 'POST',
     body: JSON.stringify({ action: 'delete', id, csrf_token: State.csrfToken }),
   });
@@ -520,7 +524,7 @@ function openAddTaskModal() {
  */
 async function openEditTaskModal(id) {
   // Görev verilerini çek
-  const res = await apiFetch(`/api/tasks.php?id=${id}`);
+  const res = await apiFetch(_BASE + `/api/tasks.php?id=${id}`);
   let task;
   if (res.success && Array.isArray(res.data)) {
     task = res.data.find(t => t.id === id);
@@ -528,7 +532,7 @@ async function openEditTaskModal(id) {
 
   // Eğer bulunamadıysa tüm listeyi çekmeyi dene
   if (!task) {
-    const all = await apiFetch('/api/tasks.php');
+    const all = await apiFetch(_BASE + '/api/tasks.php');
     if (all.success) task = (all.data ?? []).find(t => t.id === id);
   }
 
@@ -570,7 +574,7 @@ async function saveTaskForm(e) {
   const body   = { action, title, description, priority, due_date: dueDate, category_id: categoryId || null, csrf_token: State.csrfToken };
   if (id) { body.id = parseInt(id); body.status = status; }
 
-  const res = await apiFetch('/api/tasks.php', {
+  const res = await apiFetch(_BASE + '/api/tasks.php', {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -593,7 +597,7 @@ async function saveTaskForm(e) {
  * Dashboard istatistik kartlarını günceller.
  */
 async function loadStats() {
-  const res = await apiFetch('/api/tasks.php?stats=1');
+  const res = await apiFetch(_BASE + '/api/tasks.php?stats=1');
   if (!res.success) return;
 
   // PHP tarafından stats endpoint'i yoksa görevleri sayalım

@@ -442,7 +442,13 @@ input, select, textarea {
 }
 
 /* Kategori yönetim butonları */
-.sidebar__cat-actions { opacity: 0; transition: opacity var(--transition); }
+.sidebar__cat-actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
 .sidebar__nav-item:hover .sidebar__cat-actions { opacity: 1; }
 
 .sidebar__add-cat {

@@ -71,3 +71,29 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   CONSTRAINT `fk_tasks_category`
     FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- SEED VERİSİ
+-- Test kullanıcısı: demo@example.com / şifre: 123456
+-- ============================================================
+
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `created_at`) VALUES
+(1, 'demo', 'demo@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2026-03-01 09:00:00');
+
+INSERT INTO `categories` (`id`, `user_id`, `name`, `color`) VALUES
+(1, 1, 'Genel',   '#6B7280'),
+(2, 1, 'İş',      '#3B82F6'),
+(3, 1, 'Kişisel', '#22C55E'),
+(4, 1, 'Acil',    '#EF4444');
+
+INSERT INTO `tasks` (`user_id`, `category_id`, `title`, `description`, `priority`, `status`, `due_date`, `created_at`, `updated_at`) VALUES
+(1, 2, 'Proje toplantısına hazırlan',   'Q2 yol haritası sunumu için slaytları hazırla.',        'high',   'pending',     CURDATE() + INTERVAL 1 DAY,  NOW(), NOW()),
+(1, 2, 'Haftalık raporu gönder',        'Geçen haftanın sprint özetini ekiple paylaş.',           'medium', 'in_progress', CURDATE(),                   NOW(), NOW()),
+(1, 4, 'Sunucu faturasını öde',         'AWS faturası bu ay sona eriyor, ödemeyi unutma.',        'high',   'pending',     CURDATE(),                   NOW(), NOW()),
+(1, 3, 'Spor salonuna git',             'Pazartesi-Çarşamba-Cuma antrenman programı.',            'low',    'pending',     CURDATE() + INTERVAL 2 DAY,  NOW(), NOW()),
+(1, 3, 'Kitap oku',                     '"Atomik Alışkanlıklar" — 3. bölüme kadar bitir.',        'low',    'completed',   NULL,                        NOW(), NOW()),
+(1, 1, 'Alışveriş listesi hazırla',     'Haftalık market ihtiyaçlarını listele.',                 'low',    'pending',     CURDATE() + INTERVAL 3 DAY,  NOW(), NOW()),
+(1, 2, 'Code review yap',              'Takım arkadaşının PR incelemesi ve geri bildirim.',      'medium', 'in_progress', CURDATE() + INTERVAL 1 DAY,  NOW(), NOW()),
+(1, 4, 'Doktor randevusu al',           'Yıllık kontrol için randevu oluştur.',                   'high',   'pending',     CURDATE() - INTERVAL 1 DAY,  NOW(), NOW()),
+(1, 2, 'API dokümantasyonunu güncelle', 'Yeni endpointleri Swagger a ekle.',                      'medium', 'completed',   NULL,                        NOW(), NOW()),
+(1, 3, 'Tatil planı yap',               'Yaz tatili için otel ve uçak araştır.',                  'low',    'pending',     CURDATE() + INTERVAL 14 DAY, NOW(), NOW());

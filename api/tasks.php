@@ -25,6 +25,11 @@ if (!currentUserId()) {
 $userId = currentUserId();
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Session okunduktan sonra dosya kilidini serbest bırak.
+// Aksi hâlde eş zamanlı AJAX istekleri birbirini bekler,
+// bu da MySQL lock timeout hatasına yol açar.
+session_write_close();
+
 // -------------------------------------------------------
 // GET: görevleri filtreli getir
 // -------------------------------------------------------

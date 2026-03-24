@@ -21,7 +21,11 @@ if (!currentUserId()) {
 
 $userId = currentUserId();
 $method = $_SERVER['REQUEST_METHOD'];
-$db     = getDB();
+
+// Session dosya kilidini erken serbest bırak (eş zamanlı AJAX desteği)
+session_write_close();
+
+$db = getDB();
 
 // -------------------------------------------------------
 // GET: kategorileri listele

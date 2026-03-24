@@ -3,17 +3,6 @@
 Modern, tam özellikli bir To-Do / Görev Yönetim uygulaması. PHP + MySQL backend, saf JavaScript frontend ile geliştirilmiştir.
 
 ---
-
-## 📸 Ekran Görüntüleri
-
-> *(Ekran görüntülerinizi buraya ekleyin)*
-
-| Dashboard | Görev Ekleme | Karanlık Tema |
-|-----------|-------------|--------------|
-| ![Dashboard](screenshots/dashboard.png) | ![Görev Ekle](screenshots/add-task.png) | ![Dark Mode](screenshots/dark-mode.png) |
-
----
-
 ## ✨ Özellikler
 
 ### Kullanıcı Sistemi

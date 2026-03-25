@@ -118,6 +118,10 @@ require_once __DIR__ . '/includes/header.php';
         <span class="sidebar__nav-icon">🌙</span>
         <span class="sidebar__nav-text">Tema Değiştir</span>
       </button>
+      <a href="<?= BASE_URL ?>/settings.php" class="sidebar__nav-link">
+        <span class="sidebar__nav-icon">⚙️</span>
+        <span class="sidebar__nav-text">Ayarlar</span>
+      </a>
       <a href="<?= BASE_URL ?>/logout.php" class="sidebar__nav-link" id="logoutBtn">
         <span class="sidebar__nav-icon">🚪</span>
         <span class="sidebar__nav-text">Çıkış Yap</span>
@@ -159,13 +163,36 @@ require_once __DIR__ . '/includes/header.php';
     <!-- Sağ aksiyonlar -->
     <div class="topbar__actions">
       <!-- Bildirim -->
-      <button class="topbar__icon-btn" title="Bildirimler">
-        <span>🔔</span>
-        <span class="topbar__badge hidden" id="notifBadge">0</span>
-      </button>
+      <div class="notif-wrap" id="notifWrap">
+        <button class="topbar__icon-btn" title="Bildirimler" id="notifBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="topbar__badge hidden" id="notifBadge">0</span>
+        </button>
+        <!-- Bildirim Dropdown -->
+        <div class="notif-dropdown hidden" id="notifDropdown">
+          <div class="notif-dropdown__header">
+            <span class="notif-dropdown__title">Bildirimler</span>
+            <button class="notif-dropdown__mark-all" id="markAllReadBtn">Tümünü Okundu İşaretle</button>
+          </div>
+          <div class="notif-dropdown__list" id="notifList">
+            <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:.875rem">Yükleniyor…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ayarlar linki -->
+      <a href="<?= BASE_URL ?>/settings.php" class="topbar__icon-btn" title="Ayarlar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/>
+        </svg>
+      </a>
 
       <!-- Avatar -->
-      <div class="topbar__avatar" title="<?= e($username) ?>"><?= e($initial) ?></div>
+      <a href="<?= BASE_URL ?>/settings.php" class="topbar__avatar" title="<?= e($username) ?>"><?= e($initial) ?></a>
     </div>
   </header>
 
@@ -173,6 +200,14 @@ require_once __DIR__ . '/includes/header.php';
        ANA İÇERİK
        ============================================================ -->
   <main class="main">
+
+    <!-- E-posta doğrulama banner (JS tarafından gösterilir) -->
+    <div class="verify-banner hidden" id="verifyBanner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      E-posta adresiniz henüz doğrulanmadı.
+      <a href="<?= BASE_URL ?>/verify-email.php" class="verify-banner__link">Şimdi Doğrula</a>
+      <button class="verify-banner__close" id="closeBanner">&times;</button>
+    </div>
 
     <!-- İstatistik Kartları -->
     <div class="stats-grid">

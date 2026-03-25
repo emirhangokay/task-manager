@@ -52,8 +52,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Dashboard panel (ilk açılış)
   await loadDashboard();
 
-  // Bildirimler
+  // Bildirimler (API + Browser)
   scheduleNotifications();
+  initNotifDropdown();
+
+  // E-posta doğrulama banner
+  initVerifyBanner();
 
   // Event listener'lar bağla
   bindFilters();
@@ -328,6 +332,136 @@ function toggleTheme() {
   applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
+/* ── Bildirim Dropdown (API) ─────────────────────────────── */
+function initNotifDropdown() {
+  const btn      = document.getElementById('notifBtn');
+  const dropdown = document.getElementById('notifDropdown');
+  const markAll  = document.getElementById('markAllReadBtn');
+  if (!btn || !dropdown) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = dropdown.classList.contains('hidden');
+    dropdown.classList.toggle('hidden', !isHidden);
+    if (isHidden) loadNotifications();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('notifWrap')?.contains(e.target)) {
+      dropdown?.classList.add('hidden');
+    }
+  });
+
+  markAll?.addEventListener('click', async () => {
+    await fetch(_BASE + '/api/notifications.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark_all_read' }),
+    });
+    loadNotifications();
+  });
+
+  // 60s polling
+  setInterval(loadNotifications, 60 * 1000);
+  loadNotifications();
+}
+
+async function loadNotifications() {
+  try {
+    const res  = await fetch(_BASE + '/api/notifications.php?limit=15');
+    const data = await res.json();
+    if (!data.success) return;
+
+    const { notifications, unread_count } = data.data;
+
+    // Badge güncelle
+    const badge = document.getElementById('notifBadge');
+    if (badge) {
+      badge.textContent = unread_count > 9 ? '9+' : unread_count;
+      badge.classList.toggle('hidden', unread_count === 0);
+    }
+
+    // Liste render
+    const list = document.getElementById('notifList');
+    if (!list) return;
+
+    if (!notifications.length) {
+      list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:.875rem">Bildirim yok</div>';
+      return;
+    }
+
+    list.innerHTML = notifications.map(n => {
+      const unread = n.is_read == 0;
+      return `<div class="notif-item ${unread ? 'notif-item--unread' : 'notif-item--read'}"
+                   data-id="${n.id}" data-unread="${unread ? 1 : 0}">
+        <div class="notif-item__dot"></div>
+        <div class="notif-item__body">
+          <div class="notif-item__title">${escHtml(n.title)}</div>
+          ${n.message ? `<div class="notif-item__msg">${escHtml(n.message)}</div>` : ''}
+        </div>
+        <div class="notif-item__time">${timeAgoShort(n.created_at)}</div>
+      </div>`;
+    }).join('');
+
+    // Tıklanınca okundu işaretle
+    list.querySelectorAll('.notif-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        if (item.dataset.unread === '1') {
+          await fetch(_BASE + '/api/notifications.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'mark_read', id: parseInt(item.dataset.id) }),
+          });
+          item.classList.remove('notif-item--unread');
+          item.classList.add('notif-item--read');
+          item.dataset.unread = '0';
+          loadNotifications();
+        }
+      });
+    });
+  } catch (_) { /* sessiz */ }
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgoShort(dt) {
+  const diff = Date.now() - new Date(dt).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'şimdi';
+  if (m < 60) return m + 'dk';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 's';
+  return Math.floor(h / 24) + 'g';
+}
+
+/* ── E-posta Doğrulama Banner ────────────────────────────── */
+async function initVerifyBanner() {
+  const banner = document.getElementById('verifyBanner');
+  const closeBtn = document.getElementById('closeBanner');
+  if (!banner) return;
+
+  // Kapatma butonunu bağla
+  closeBtn?.addEventListener('click', () => {
+    banner.classList.add('hidden');
+    sessionStorage.setItem('verifyBannerDismissed', '1');
+  });
+
+  // Dismiss edildiyse gösterme
+  if (sessionStorage.getItem('verifyBannerDismissed')) return;
+
+  try {
+    const res  = await fetch(_BASE + '/api/settings.php');
+    const data = await res.json();
+    if (!data.success) return;
+    const verified = data.data?.user?.email_verified;
+    if (!verified || verified == 0) {
+      banner.classList.remove('hidden');
+    }
+  } catch (_) { /* sessiz */ }
+}
+
 /* ── Browser Bildirimleri ────────────────────────────────── */
 function scheduleNotifications() {
   if (!('Notification' in window)) return;
@@ -353,11 +487,6 @@ function checkDueNotifications() {
   if (!dueTasks.length) return;
 
   const notifCount = dueTasks.length;
-  const badge = document.getElementById('notifBadge');
-  if (badge) {
-    badge.textContent = notifCount;
-    badge.classList.toggle('hidden', notifCount === 0);
-  }
 
   // Tek bildirim
   if (State.notifBadgeCount !== notifCount) {

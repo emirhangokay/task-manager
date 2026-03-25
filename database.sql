@@ -131,3 +131,36 @@ CREATE TABLE IF NOT EXISTS `user_settings` (
   UNIQUE KEY `uq_user_settings` (`user_id`),
   CONSTRAINT `fk_settings_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- V3 MİGRASYON — Bildirimler, profil, e-posta doğrulama
+-- ============================================================
+
+-- Kullanıcı profil alanları
+ALTER TABLE `users`
+  ADD COLUMN IF NOT EXISTS `display_name`        VARCHAR(100) DEFAULT NULL AFTER `username`,
+  ADD COLUMN IF NOT EXISTS `email_verified`       TINYINT(1)   NOT NULL DEFAULT 0 AFTER `email`,
+  ADD COLUMN IF NOT EXISTS `verification_code`    VARCHAR(6)   DEFAULT NULL AFTER `email_verified`,
+  ADD COLUMN IF NOT EXISTS `verification_expires` DATETIME     DEFAULT NULL AFTER `verification_code`;
+
+-- Kullanıcı ayarları ek alanlar
+ALTER TABLE `user_settings`
+  ADD COLUMN IF NOT EXISTS `avatar_color` VARCHAR(7) NOT NULL DEFAULT '#6366f1' AFTER `notifications_enabled`,
+  ADD COLUMN IF NOT EXISTS `language`     VARCHAR(5) NOT NULL DEFAULT 'tr'      AFTER `avatar_color`;
+
+-- Bildirimler tablosu
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id`         INT(11)      NOT NULL AUTO_INCREMENT,
+  `user_id`    INT(11)      NOT NULL,
+  `type`       ENUM('due_today','overdue','assigned','system') NOT NULL DEFAULT 'system',
+  `title`      VARCHAR(200) NOT NULL,
+  `message`    TEXT         DEFAULT NULL,
+  `task_id`    INT(11)      DEFAULT NULL,
+  `is_read`    TINYINT(1)   NOT NULL DEFAULT 0,
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_notif_user`   (`user_id`),
+  KEY `idx_notif_unread` (`user_id`, `is_read`),
+  CONSTRAINT `fk_notif_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_notif_task` FOREIGN KEY (`task_id`) REFERENCES `tasks`  (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

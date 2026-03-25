@@ -73,6 +73,57 @@ switch ($action) {
         jsonSuccess(['username' => currentUsername()], $result['message']);
         break;
 
+    // --------------------------------------------------------
+    // E-posta doğrulama
+    // --------------------------------------------------------
+    case 'verify_email':
+        $userId = currentUserId();
+        if (!$userId) { jsonError('Oturum açmanız gerekiyor.', 401); }
+        $code = trim($body['code'] ?? '');
+        if (!$code) { jsonError('Doğrulama kodu zorunludur.'); }
+        $result = verifyEmailCode($userId, $code);
+        if (!$result['success']) { jsonError($result['message']); }
+        jsonSuccess([], $result['message']);
+        break;
+
+    // --------------------------------------------------------
+    // Doğrulama kodunu yeniden gönder
+    // --------------------------------------------------------
+    case 'resend_code':
+        $userId = currentUserId();
+        if (!$userId) { jsonError('Oturum açmanız gerekiyor.', 401); }
+        $result = resendVerificationCode($userId);
+        if (!$result['success']) { jsonError($result['message']); }
+        jsonSuccess([], $result['message']);
+        break;
+
+    // --------------------------------------------------------
+    // Şifremi unuttum
+    // --------------------------------------------------------
+    case 'forgot_password':
+        $email = trim($body['email'] ?? '');
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            jsonError('Geçerli bir e-posta adresi girin.');
+        }
+        $result = sendPasswordReset($email);
+        jsonSuccess([], $result['message']);
+        break;
+
+    // --------------------------------------------------------
+    // Şifre sıfırla
+    // --------------------------------------------------------
+    case 'reset_password':
+        $userId      = (int)($body['user_id']     ?? 0);
+        $token       = trim($body['token']         ?? '');
+        $newPassword = $body['password']           ?? '';
+        if (!$userId || !$token || !$newPassword) {
+            jsonError('Eksik parametreler.');
+        }
+        $result = resetPasswordWithToken($userId, $token, $newPassword);
+        if (!$result['success']) { jsonError($result['message']); }
+        jsonSuccess([], $result['message']);
+        break;
+
     default:
         jsonError('Geçersiz action.', 400);
 }

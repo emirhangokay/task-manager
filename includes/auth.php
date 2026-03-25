@@ -8,6 +8,7 @@
  */
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/mail.php';
 
 // Oturum henüz başlatılmamışsa başlat
 if (session_status() === PHP_SESSION_NONE) {
@@ -102,8 +103,15 @@ function registerUser(string $username, string $email, string $password): array
 
     $hash = password_hash($password, PASSWORD_BCRYPT);
 
-    $stmt = $db->prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)');
-    $stmt->execute([$username, $email, $hash]);
+    // E-posta doğrulama kodu
+    $code    = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $expires = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+
+    $stmt = $db->prepare(
+        'INSERT INTO users (username, email, password, email_verified, verification_code, verification_expires)
+         VALUES (?, ?, ?, 0, ?, ?)'
+    );
+    $stmt->execute([$username, $email, $hash, $code, $expires]);
     $userId = (int)$db->lastInsertId();
 
     // Varsayılan kategorileri oluştur
@@ -118,7 +126,10 @@ function registerUser(string $username, string $email, string $password): array
         $catStmt->execute([$userId, $name, $color]);
     }
 
-    return ['success' => true, 'message' => 'Hesap oluşturuldu.'];
+    // Doğrulama e-postası gönder (hata olsa da kaydı engelleme)
+    sendVerificationEmail($email, $username, $code);
+
+    return ['success' => true, 'message' => 'Hesap oluşturuldu. Lütfen e-postanızı doğrulayın.'];
 }
 
 /**
@@ -162,4 +173,111 @@ function logoutUser(): void
         setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
     }
     session_destroy();
+}
+
+/**
+ * E-posta doğrulama kodu doğrular.
+ */
+function verifyEmailCode(int $userId, string $code): array
+{
+    $db   = getDB();
+    $stmt = $db->prepare(
+        'SELECT id FROM users
+         WHERE id = ? AND verification_code = ? AND verification_expires > NOW() AND email_verified = 0
+         LIMIT 1'
+    );
+    $stmt->execute([$userId, $code]);
+    if (!$stmt->fetch()) {
+        return ['success' => false, 'message' => 'Kod hatalı veya süresi dolmuş.'];
+    }
+
+    $db->prepare(
+        'UPDATE users SET email_verified = 1, verification_code = NULL, verification_expires = NULL WHERE id = ?'
+    )->execute([$userId]);
+
+    return ['success' => true, 'message' => 'E-posta adresiniz doğrulandı.'];
+}
+
+/**
+ * Doğrulama kodunu yeniden gönderir.
+ */
+function resendVerificationCode(int $userId): array
+{
+    $db   = getDB();
+    $stmt = $db->prepare('SELECT email, username, email_verified FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        return ['success' => false, 'message' => 'Kullanıcı bulunamadı.'];
+    }
+    if ($user['email_verified']) {
+        return ['success' => false, 'message' => 'E-posta zaten doğrulanmış.'];
+    }
+
+    $code    = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $expires = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+
+    $db->prepare(
+        'UPDATE users SET verification_code = ?, verification_expires = ? WHERE id = ?'
+    )->execute([$code, $expires, $userId]);
+
+    sendVerificationEmail($user['email'], $user['username'], $code);
+
+    return ['success' => true, 'message' => 'Doğrulama kodu tekrar gönderildi.'];
+}
+
+/**
+ * Şifre sıfırlama bağlantısı gönderir.
+ */
+function sendPasswordReset(string $email): array
+{
+    $db   = getDB();
+    $stmt = $db->prepare('SELECT id, username FROM users WHERE email = ? LIMIT 1');
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    // Güvenlik: kullanıcı bulunamasa da aynı mesajı ver
+    if (!$user) {
+        return ['success' => true, 'message' => 'Eğer bu e-posta kayıtlıysa sıfırlama bağlantısı gönderildi.'];
+    }
+
+    $token   = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+    // verification_code / expires alanlarını token deposu olarak kullan
+    $db->prepare(
+        'UPDATE users SET verification_code = ?, verification_expires = ? WHERE id = ?'
+    )->execute([$token, $expires, $user['id']]);
+
+    $resetUrl = BASE_URL . '/reset-password.php?token=' . $token . '&uid=' . $user['id'];
+    sendPasswordResetEmail($email, $user['username'], $resetUrl);
+
+    return ['success' => true, 'message' => 'Eğer bu e-posta kayıtlıysa sıfırlama bağlantısı gönderildi.'];
+}
+
+/**
+ * Şifre sıfırlama token'ı doğrular ve yeni şifre ayarlar.
+ */
+function resetPasswordWithToken(int $userId, string $token, string $newPassword): array
+{
+    if (strlen($newPassword) < 6) {
+        return ['success' => false, 'message' => 'Şifre en az 6 karakter olmalıdır.'];
+    }
+
+    $db   = getDB();
+    $stmt = $db->prepare(
+        'SELECT id FROM users WHERE id = ? AND verification_code = ? AND verification_expires > NOW() LIMIT 1'
+    );
+    $stmt->execute([$userId, $token]);
+    if (!$stmt->fetch()) {
+        return ['success' => false, 'message' => 'Geçersiz veya süresi dolmuş bağlantı.'];
+    }
+
+    $hash = password_hash($newPassword, PASSWORD_BCRYPT);
+    $db->prepare(
+        'UPDATE users SET password = ?, verification_code = NULL, verification_expires = NULL WHERE id = ?'
+    )->execute([$hash, $userId]);
+
+    return ['success' => true, 'message' => 'Şifreniz başarıyla güncellendi.'];
 }

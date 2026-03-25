@@ -1,0 +1,11 @@
+# Hassas yapılandırma dosyaları
+config/mail.php
+
+# IDE / OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# PHP
+*.log

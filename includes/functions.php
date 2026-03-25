@@ -177,6 +177,25 @@ function getTodayTasks(int $userId): array
 }
 
 /**
+ * Aktivite logu kaydeder. Hata sessizce yutulur — log kritik değil.
+ *
+ * @param int    $userId
+ * @param int|null $taskId
+ * @param string $action  created|updated|completed|deleted|status_changed
+ * @param string $details Açıklama metni
+ */
+function logActivity(int $userId, ?int $taskId, string $action, string $details = ''): void
+{
+    try {
+        getDB()
+            ->prepare('INSERT INTO activity_logs (user_id, task_id, action, details) VALUES (?, ?, ?, ?)')
+            ->execute([$userId, $taskId, $action, $details]);
+    } catch (\Throwable $e) {
+        // Sessizce geç
+    }
+}
+
+/**
  * Türkçe öncelik etiketi döndürür.
  *
  * @param string $priority

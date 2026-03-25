@@ -97,3 +97,37 @@ INSERT INTO `tasks` (`user_id`, `category_id`, `title`, `description`, `priority
 (1, 4, 'Doktor randevusu al',           'Yıllık kontrol için randevu oluştur.',                   'high',   'pending',     CURDATE() - INTERVAL 1 DAY,  NOW(), NOW()),
 (1, 2, 'API dokümantasyonunu güncelle', 'Yeni endpointleri Swagger a ekle.',                      'medium', 'completed',   NULL,                        NOW(), NOW()),
 (1, 3, 'Tatil planı yap',               'Yaz tatili için otel ve uçak araştır.',                  'low',    'pending',     CURDATE() + INTERVAL 14 DAY, NOW(), NOW());
+
+-- ============================================================
+-- V2 MİGRASYON — Mevcut veritabanına uygula
+-- ============================================================
+
+-- Kanban sıralama pozisyonu
+ALTER TABLE `tasks` ADD COLUMN IF NOT EXISTS `position` INT NOT NULL DEFAULT 0 AFTER `status`;
+
+-- Aktivite logları
+CREATE TABLE IF NOT EXISTS `activity_logs` (
+  `id`         INT(11)  NOT NULL AUTO_INCREMENT,
+  `user_id`    INT(11)  NOT NULL,
+  `task_id`    INT(11)  DEFAULT NULL,
+  `action`     ENUM('created','updated','completed','deleted','status_changed') NOT NULL,
+  `details`    TEXT     DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_activity_user` (`user_id`),
+  KEY `idx_activity_task` (`task_id`),
+  CONSTRAINT `fk_activity_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_activity_task` FOREIGN KEY (`task_id`) REFERENCES `tasks`  (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Kullanıcı ayarları (tema, varsayılan görünüm)
+CREATE TABLE IF NOT EXISTS `user_settings` (
+  `id`                    INT(11)     NOT NULL AUTO_INCREMENT,
+  `user_id`               INT(11)     NOT NULL,
+  `theme`                 VARCHAR(10) NOT NULL DEFAULT 'light',
+  `default_view`          ENUM('list','kanban','calendar') NOT NULL DEFAULT 'list',
+  `notifications_enabled` TINYINT(1)  NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_user_settings` (`user_id`),
+  CONSTRAINT `fk_settings_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

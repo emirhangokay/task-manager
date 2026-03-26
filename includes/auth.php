@@ -107,11 +107,20 @@ function registerUser(string $username, string $email, string $password): array
     $code    = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $expires = date('Y-m-d H:i:s', strtotime('+30 minutes'));
 
-    $stmt = $db->prepare(
-        'INSERT INTO users (username, email, password, email_verified, verification_code, verification_expires)
-         VALUES (?, ?, ?, 0, ?, ?)'
-    );
-    $stmt->execute([$username, $email, $hash, $code, $expires]);
+    // V3 kolonları varsa doğrulama koduyla, yoksa basit insert
+    try {
+        $stmt = $db->prepare(
+            'INSERT INTO users (username, email, password, email_verified, verification_code, verification_expires)
+             VALUES (?, ?, ?, 0, ?, ?)'
+        );
+        $stmt->execute([$username, $email, $hash, $code, $expires]);
+        $sendEmail = true;
+    } catch (\PDOException $e) {
+        // V3 migrasyonu çalıştırılmamış — eski şema ile devam et
+        $stmt = $db->prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)');
+        $stmt->execute([$username, $email, $hash]);
+        $sendEmail = false;
+    }
     $userId = (int)$db->lastInsertId();
 
     // Varsayılan kategorileri oluştur
@@ -127,7 +136,9 @@ function registerUser(string $username, string $email, string $password): array
     }
 
     // Doğrulama e-postası gönder (hata olsa da kaydı engelleme)
-    sendVerificationEmail($email, $username, $code);
+    if ($sendEmail) {
+        sendVerificationEmail($email, $username, $code);
+    }
 
     return ['success' => true, 'message' => 'Hesap oluşturuldu. Lütfen e-postanızı doğrulayın.'];
 }

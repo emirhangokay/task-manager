@@ -14,6 +14,13 @@ require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Global hata yakalayıcı — PHP hatalarını JSON'a çevir
+set_exception_handler(function(Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Sunucu hatası: ' . $e->getMessage()]);
+    exit;
+});
+
 // Yalnızca POST kabul et
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonError('Yalnızca POST destekleniyor.', 405);

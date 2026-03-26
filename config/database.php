@@ -52,6 +52,9 @@ function getDB(): PDO
 
         try {
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+            // PHP ve MySQL saat dilimini eşitle (Türkiye: UTC+3)
+            $pdo->exec("SET time_zone = '+03:00'");
+            date_default_timezone_set('Europe/Istanbul');
         } catch (PDOException $e) {
             // Üretim ortamında hata detayını gösterme
             http_response_code(500);
